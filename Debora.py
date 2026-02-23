@@ -38,10 +38,8 @@ logo = """
 ║   ║ ║     ║   ║ ║    ║  ║     ║   ║ ║   ║ ║  ║  ║ ║    ║  
 ║══╗╝ ║     ╔═══╗ ║    ║══╝╗    ╔═══╗ ║═══╗ ║  ║  ║ ╚═╔═╝   
 ╚══╝  ════╝ ╝   ╚ ╚══╝ ╝   ╚    ╝   ╚ ╝   ╚ ╝     ╚   ╚ """
-faded_text = fade.fire(logo)
-print(faded_text)
 CYBER_LINES = [
-    "Booting BA313L7 engine...",
+    "Booting BlackArmy engine...",
     "Spinning up threads...",
     "Priming HTTP sessions...",
     "Arming observability...",
@@ -53,12 +51,12 @@ SPINNER_FRAMES = ["⣾","⣽","⣻","⢿","⡿","⣟","⣯","⣷"]
 shutdown_flag = threading.Event()
 
 def print_banner():
-    print(Fore.MAGENTA + Style.BRIGHT)
+    print(Fore.BLUE + Style.BRIGHT + BANNER)
     # cyberpunk boot animation
     for i, line in enumerate(CYBER_LINES):
         for _ in range(8):
             frame = SPINNER_FRAMES[_ % len(SPINNER_FRAMES)]
-            sys.stdout.write(f"\r{Fore.CYAN}{frame} {line}")
+            sys.stdout.write(f"\r{Fore.BLUE}{frame} {line}")
             sys.stdout.flush()
             time.sleep(0.05)
         print(f"\r{Fore.GREEN}✔ {line}{' ' * 20}")
@@ -95,7 +93,7 @@ def build_session(timeout, keepalive=True, verify_tls=True):
     s.mount("http://", adapter)
     s.mount("https://", adapter)
     s.headers.update({
-        "User-Agent": "BA313L7-LoadTester/1.0",
+        "User-Agent": "BlackArmy-LoadTester/1.0",
         "Connection": "keep-alive" if keepalive else "close"
     })
     s.verify = verify_tls
@@ -156,14 +154,16 @@ def worker(idx, args, job_q: queue.Queue, metrics: Metrics, start_ts, end_ts):
         # eye-candy pulse
         if time.time() - last_log >= 1.0 and idx == 0:
             total = metrics.success + metrics.fail
-            sys.stdout.write
-            print(f"\r\033[48;5;3mThreads {args.threads} |\033[0m \033[38;5;7mSent {total}  \033[33mStarting-attack\033[0m")
-            print("\033[48;5;5m| 2xx/3xx/4xx/5xx: "
+            sys.stdout.write(
+                f"\r{Fore.YELLOW} Threads {args.threads} | Sent {total} | 2xx/3xx/4xx/5xx: "
                 f"{sum(v for k,v in metrics.codes.items() if 200<=k<300)}/"
                 f"{sum(v for k,v in metrics.codes.items() if 300<=k<400)}/"
                 f"{sum(v for k,v in metrics.codes.items() if 400<=k<500)}/"
-                f"{sum(v for k,v in metrics.codes.items() if 500<=k<600)}\033[0m"
-                )
+                f"{sum(v for k,v in metrics.codes.items() if 500<=k<600)}")
+            print(f"\r\033[48;5;7m\033[30mthreads {args.threads} |\033[0m \033[32mSent {total} \033[33mStarting-attack \033[38;5;39mcode: \033[0m")
+            print(f"\r\033[36mInfo-target URL: \033[38;5;39m {str(url)} \033[37mReqs_execution")
+            sys.stdout.flush()
+            print(f"\r\033[38;5;220mInfo-target URL: \033[38;5;39m {str(url)} \033[37m{payload}")
             sys.stdout.flush()
             last_log = time.time()
 
@@ -194,12 +194,12 @@ def print_report(args, metrics: Metrics, start_ts, end_ts):
 
     print("\n")
     print(Fore.CYAN + Style.BRIGHT + "─" * 64)
-    print(Fore.CYAN + Style.BRIGHT + " BA313L7 DDoS Report")
+    print(Fore.CYAN + Style.BRIGHT + " BlackArmy DDoS Report")
     print(Fore.CYAN + Style.BRIGHT + "─" * 64)
-    print(f"{Fore.MAGENTA}Target    : {args.url}")
-    print(f"{Fore.MAGENTA}Method    : {args.method} | Threads: {args.threads} | RPS/thread: {args.rps or 'unlimited'}")
-    print(f"{Fore.MAGENTA}Duration  : {args.duration}s | Keep-Alive: {str(not args.no_keepalive)}")
-    print(f"{Fore.MAGENTA}Timeline  : {datetime.fromtimestamp(start_ts)} → {datetime.fromtimestamp(end_ts)}")
+    print(f"{Fore.WHITE}Target    : {args.url}")
+    print(f"{Fore.WHITE}Method    : {args.method} | Threads: {args.threads} | RPS/thread: {args.rps or 'unlimited'}")
+    print(f"{Fore.WHITE}Duration  : {args.duration}s | Keep-Alive: {str(not args.no_keepalive)}")
+    print(f"{Fore.WHITE}Timeline  : {datetime.fromtimestamp(start_ts)} → {datetime.fromtimestamp(end_ts)}")
     print("")
     print(f"{Fore.GREEN}Total Requests : {total}")
     print(f"{Fore.GREEN}Success        : {metrics.success}")
@@ -216,31 +216,12 @@ def print_report(args, metrics: Metrics, start_ts, end_ts):
     print(Fore.CYAN + Style.BRIGHT + "─" * 64)
 
 # --------- Main ---------
-
 def sigint_handler(signum, frame):
     shutdown_flag.set()
     print(Fore.RED + "\n[!] Ctrl-C received, shutting down...")
 
 def main():
-    print(f"{Fore.LIGHTRED_EX}╔{'═' * 56}╗")
-    print(f"{Fore.LIGHTRED_EX}║\033[48;5;3m\033[97m  Author By: Zblack313{' ' * 35} \033[0m{Fore.LIGHTRED_EX}║")
-    print(f"{Fore.LIGHTRED_EX}《\033[48;5;3m\033[97m  Developer By :Kunkaffa{' ' * 35} \033[0m{Fore.LIGHTRED_EX}》")
-    print(f"{Fore.LIGHTRED_EX}║\033[48;5;3m\033[97m  Black Army Internal script{' ' * 27} \033[0m{Fore.LIGHTRED_EX}║")
-    print(f"{Fore.LIGHTRED_EX}╚{'═' * 56}╝")
-
-    attemps = 0
-    while attemps < 100:
-        username = input("\033[33m┏━> Enter your username: \033[0m")
-        password = input("\033[33m┗━> Enter your password: \033[0m")
-
-        if username == '*****' and password == '*****':
-            print("\033[48;5;3m•••⟩⟩ L0NG LIVE THE STRUGGLE...!!\033[0m")
-            break
-        else:
-            print('Incorrect credentials. Check if you have Caps lock on and try again.')
-            attemps += 1
-            continue
-    parser = argparse.ArgumentParser(description="BA313L7 HTTP Load Tester (no raw sockets)")
+    parser = argparse.ArgumentParser(description="BlackArmy HTTP Load Tester (no raw sockets)")
     parser.add_argument("--url", required=True, help="Target URL (e.g., https://example.com/)")
     parser.add_argument("--method", default="GET", choices=["GET", "POST", "PUT"], help="HTTP method")
     parser.add_argument("--threads", type=int, default=100, help="Number of worker threads")
@@ -254,6 +235,7 @@ def main():
     parser.add_argument("--header", action="append", default=[], help="Custom header, e.g. 'Key: Value'")
     args = parser.parse_args()
 
+    print_banner()
 
     # prepare job queue (optional mixed endpoints)
     job_q = queue.Queue()
